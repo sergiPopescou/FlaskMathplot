@@ -1,1 +1,1 @@
-worker: python flask_mathplotlib.py
+web: python flask_mathplotlib.py
