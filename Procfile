@@ -1,1 +1,1 @@
-web: python flask_mathplotlib.py  runserver 0.0.0.0:5000
+web: python flask_mathplotlib.py runserver 0.0.0.0:5000

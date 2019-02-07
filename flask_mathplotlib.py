@@ -21,7 +21,7 @@ app = Flask(__name__)
 def index():
     """ Returns html with the img tag for your plot.
     """
-    num_x_points = int(request.args.get("num_x_points", 50))
+    num_x_points = int(request.args.get("num_x_points", 5))
     # in a real app you probably want to use a flask template.
     return f"""
     <h1>Flask and matplotlib</h1>
@@ -35,18 +35,26 @@ def index():
          alt="random points as png"
          height="200"
     >
-    <h3>Plot as a SVG</h3>
+    <h3>Plot pie chart as a SVG</h3>
     <img src="/matplot-as-image-{num_x_points}.svg"
-         alt="random points as svg"
+         alt="random pie chart as svg"
+         height="200"
+    >
+    <h3>Plot polar as a SVG</h3>
+    <img src="/polar-as-image-{num_x_points}.svg"
+         alt="random polar as svg"
          height="200"
     >
     """
+
+
+
     # from flask import render_template
     # return render_template("yourtemplate.html", num_x_points=num_x_points)
 
 
 @app.route("/matplot-as-image-<int:num_x_points>.png")
-def plot_png(num_x_points=50):
+def plot_png(num_x_points=5):
     """ renders the plot on the fly.
     """
     fig = Figure()
@@ -59,8 +67,7 @@ def plot_png(num_x_points=50):
     return Response(output.getvalue(), mimetype="image/png")
 
 
-@app.route("/matplot-as-image-<int:num_x_points>.svg")
-def plot_svg(num_x_points=50):
+def plot_svg(num_x_points=5):
     """ renders the plot on the fly.
     """
     fig = Figure()
@@ -68,6 +75,70 @@ def plot_svg(num_x_points=50):
     x_points = range(num_x_points)
     axis.plot(x_points, [random.randint(1, 30) for x in x_points])
 
+    output = io.BytesIO()
+    FigureCanvasSVG(fig).print_svg(output)
+    return Response(output.getvalue(), mimetype="image/svg+xml")
+
+
+@app.route("/matplot-as-image-<int:parts>.svg")
+def plot_pie(parts=5):
+    import matplotlib.pyplot as plt
+    from utils.rndm import randomword
+
+    # Pie chart, where the slices will be ordered and plotted counter-clockwise:
+    labels = [randomword(6) for i in range(parts)]
+    sizes = [random.randint(1,101) for i in range(parts)]#15, 30, 45, 10]
+    explode = [0] * parts #(0, 0.1, 0, 0)  # only "explode" the 2nd slice (i.e. 'Hogs')
+    explode[random.randint(0,parts)] = 0.1
+
+    fig1, ax1 = plt.subplots()
+    ax1.pie(sizes, explode=explode, labels=labels, autopct='%1.1f%%',
+            shadow=True, startangle=90)
+    ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+
+    output = io.BytesIO()
+    FigureCanvasSVG(fig1).print_svg(output)
+    return Response(output.getvalue(), mimetype="image/svg+xml")
+    #
+    # sunalt = df_week_max_angle.plot().get_figure()
+    # buf = io.BytesIO()
+    # sunalt.savefig(buf, format='png')
+    # buf.seek(0)
+    #
+    # plt.plot()
+
+
+@app.route("/polar-as-image-<int:parts>.svg")
+def polar_pie(parts):
+    """
+    =======================
+    Pie chart on polar axis
+    =======================
+
+    Demo of bar plot on a polar axis.
+    """
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    fig = plt.figure()
+    # Compute pie slices
+    N = 20
+    theta = np.linspace(0.0, 2 * np.pi, N, endpoint=False)
+    radii = 10 * np.random.rand(N)
+    width = np.pi / 4 * np.random.rand(N)
+
+    ax = plt.subplot(111, projection='polar')
+    bars = ax.bar(theta, radii, width=width, bottom=0.0)
+
+    # Use custom colors and opacity
+    for r, bar in zip(radii, bars):
+        bar.set_facecolor(plt.cm.viridis(r / 10.))
+        bar.set_alpha(0.5)
+    #
+    # plt.savefig('foo.png')
+    # plt.close()
+
+    fig.savefig('temp.png', dpi=fig.dpi)
     output = io.BytesIO()
     FigureCanvasSVG(fig).print_svg(output)
     return Response(output.getvalue(), mimetype="image/svg+xml")
